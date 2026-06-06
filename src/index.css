@@ -1,0 +1,30 @@
+:root {
+  color-scheme: dark;
+
+  --bg-base: #0a0e17;
+  --text-primary: #f1f5f9;
+  --text-shadow: rgba(0, 0, 0, 0.6);
+  --photo-border: rgba(148, 163, 184, 0.35);
+  --photo-shadow: rgba(0, 0, 0, 0.55);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

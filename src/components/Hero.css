@@ -1,0 +1,51 @@
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.hero__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  text-align: center;
+}
+
+.hero__photo {
+  max-height: 40vh;
+  width: auto;
+  border-radius: 1rem;
+  border: 3px solid var(--photo-border);
+  box-shadow: 0 8px 40px var(--photo-shadow);
+  object-fit: cover;
+}
+
+.hero__name {
+  font-family: 'Press Start 2P', cursive;
+  font-size: clamp(0.7rem, 2.5vw, 1.75rem);
+  font-weight: 400;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  line-height: 1.8;
+  letter-spacing: 0.05em;
+  text-shadow:
+    0 2px 12px var(--text-shadow),
+    0 0 48px rgba(14, 116, 144, 0.15);
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .hero__content {
+    flex-direction: row;
+    gap: 3rem;
+    text-align: left;
+  }
+
+  .hero__photo {
+    max-height: 50vh;
+    flex-shrink: 0;
+  }
+}

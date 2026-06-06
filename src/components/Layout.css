@@ -1,0 +1,8 @@
+.layout {
+  min-height: 100vh;
+}
+
+.layout__content {
+  position: relative;
+  z-index: 1;
+}
