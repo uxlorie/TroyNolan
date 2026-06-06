@@ -1,12 +1,12 @@
 import Layout from './components/Layout';
 import Hero from './components/Hero';
-import Pong from './sections/Pong';
+import Snake from './sections/Snake';
 
 function App() {
   return (
     <Layout>
       <Hero />
-      <Pong />
+      <Snake />
     </Layout>
   );
 }
