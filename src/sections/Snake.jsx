@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useBackgroundPause } from '../context/BackgroundPauseContext';
 import './Snake.css';
 
-const TICK_MS = { desktop: 130, mobile: 175 };
+const TICK_MS = { desktop: 320, mobile: 400 };
 const INITIAL_LENGTH = 3;
 
 const DIRECTIONS = {
@@ -50,7 +50,7 @@ function spawnFood(snake, cols, rows) {
 }
 
 function createInitialState(cols, rows) {
-  const startX = Math.floor(cols / 2);
+  const startX = Math.min(cols - 2, Math.max(INITIAL_LENGTH, Math.floor(cols / 2)));
   const startY = Math.floor(rows / 2);
   const snake = Array.from({ length: INITIAL_LENGTH }, (_, i) => ({
     x: startX - i,
@@ -105,7 +105,7 @@ export default function Snake() {
   const queueDirection = useCallback((dir) => {
     const state = stateRef.current;
     if (!state || gameOverRef.current) return;
-    if (!isOpposite(dir, state.direction)) {
+    if (!isOpposite(dir, state.pendingDirection)) {
       state.pendingDirection = dir;
     }
   }, []);
@@ -118,6 +118,7 @@ export default function Snake() {
     gridRef.current = grid;
     stateRef.current = createInitialState(grid.cols, grid.rows);
     gameOverRef.current = false;
+    lastTickRef.current = 0;
     setScore(0);
     setGameOver(false);
     setMessage('Eat the dots to grow!');
@@ -159,6 +160,8 @@ export default function Snake() {
     const canvas = canvasRef.current;
     const arena = arenaRef.current;
     if (!canvas || !arena) return;
+
+    let active = true;
 
     const resize = () => {
       tickMsRef.current = getTickMs();
@@ -241,7 +244,10 @@ export default function Snake() {
 
       const hitWall =
         newHead.x < 0 || newHead.y < 0 || newHead.x >= grid.cols || newHead.y >= grid.rows;
-      const hitSelf = state.snake.some((seg) => seg.x === newHead.x && seg.y === newHead.y);
+
+      const willEat = state.food && newHead.x === state.food.x && newHead.y === state.food.y;
+      const bodyToCheck = willEat ? state.snake : state.snake.slice(0, -1);
+      const hitSelf = bodyToCheck.some((seg) => seg.x === newHead.x && seg.y === newHead.y);
 
       if (hitWall || hitSelf) {
         gameOverRef.current = true;
@@ -252,7 +258,7 @@ export default function Snake() {
 
       state.snake.unshift(newHead);
 
-      if (state.food && newHead.x === state.food.x && newHead.y === state.food.y) {
+      if (willEat) {
         state.score += 1;
         setScore(state.score);
         state.food = spawnFood(state.snake, grid.cols, grid.rows);
@@ -301,11 +307,21 @@ export default function Snake() {
     };
 
     const tick = (now) => {
-      if (!lastTickRef.current) lastTickRef.current = now;
-      if (now - lastTickRef.current >= tickMsRef.current) {
-        step();
+      if (!active || document.hidden) {
         lastTickRef.current = now;
+        rafRef.current = requestAnimationFrame(tick);
+        draw();
+        return;
       }
+
+      if (!lastTickRef.current) lastTickRef.current = now;
+
+      const elapsed = now - lastTickRef.current;
+      if (elapsed >= tickMsRef.current) {
+        step();
+        lastTickRef.current = now - (elapsed % tickMsRef.current);
+      }
+
       draw();
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -313,6 +329,7 @@ export default function Snake() {
     rafRef.current = requestAnimationFrame(tick);
 
     return () => {
+      active = false;
       ro.disconnect();
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener('keydown', onKeyDown);
