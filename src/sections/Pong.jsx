@@ -7,8 +7,18 @@ const PADDLE_WIDTH = 12;
 const PADDLE_HEIGHT = 80;
 const BALL_RADIUS = 11;
 const PADDLE_MARGIN = 16;
-const BALL_SPEED = 5;
-const AI_SPEED = 4.2;
+const SPEEDS = {
+  desktop: { ball: 5, ai: 4.2, paddle: 6 },
+  mobile: { ball: 3, ai: 3, paddle: 5 }
+};
+
+function isMobileLayout() {
+  return window.matchMedia('(max-width: 767px), (hover: none) and (pointer: coarse)').matches;
+}
+
+function getSpeeds() {
+  return isMobileLayout() ? SPEEDS.mobile : SPEEDS.desktop;
+}
 
 function getDpr() {
   return Math.min(window.devicePixelRatio || 1, 2);
@@ -55,13 +65,13 @@ function drawTennisBall(ctx, x, y, radius) {
   ctx.restore();
 }
 
-function createBall(w, h, direction = 1) {
+function createBall(w, h, direction = 1, ballSpeed = SPEEDS.desktop.ball) {
   const angle = (Math.random() * Math.PI) / 3 - Math.PI / 6;
   return {
     x: w / 2,
     y: h / 2,
-    vx: Math.cos(angle) * BALL_SPEED * direction,
-    vy: Math.sin(angle) * BALL_SPEED
+    vx: Math.cos(angle) * ballSpeed * direction,
+    vy: Math.sin(angle) * ballSpeed
   };
 }
 
@@ -100,6 +110,7 @@ export default function Pong() {
   const stateRef = useRef(null);
   const scoresRef = useRef({ player: 0, ai: 0 });
   const gameOverRef = useRef(false);
+  const speedRef = useRef(getSpeeds());
   const rafRef = useRef(null);
 
   const [playerScore, setPlayerScore] = useState(0);
@@ -112,7 +123,7 @@ export default function Pong() {
     const state = stateRef.current;
     if (!canvas || !state) return;
     const { w, h } = getLogicalSize(canvas);
-    state.ball = createBall(w, h, direction);
+    state.ball = createBall(w, h, direction, speedRef.current.ball);
   }, []);
 
   const resetGame = useCallback(() => {
@@ -124,7 +135,7 @@ export default function Pong() {
     stateRef.current = {
       playerY: h / 2 - PADDLE_HEIGHT / 2,
       aiY: h / 2 - PADDLE_HEIGHT / 2,
-      ball: createBall(w, h, Math.random() > 0.5 ? 1 : -1)
+      ball: createBall(w, h, Math.random() > 0.5 ? 1 : -1, speedRef.current.ball)
     };
 
     scoresRef.current = { player: 0, ai: 0 };
@@ -160,6 +171,7 @@ export default function Pong() {
     if (!canvas || !arena) return;
 
     const resize = () => {
+      speedRef.current = getSpeeds();
       const rect = arena.getBoundingClientRect();
       const dpr = getDpr();
       const width = Math.max(1, Math.floor(rect.width * dpr));
@@ -174,7 +186,7 @@ export default function Pong() {
         stateRef.current = {
           playerY: h / 2 - PADDLE_HEIGHT / 2,
           aiY: h / 2 - PADDLE_HEIGHT / 2,
-          ball: createBall(w, h, 1)
+          ball: createBall(w, h, 1, speedRef.current.ball)
         };
       }
     };
@@ -223,8 +235,10 @@ export default function Pong() {
       }
 
       if (!gameOverRef.current) {
-        if (keysRef.current.up) state.playerY -= 6;
-        if (keysRef.current.down) state.playerY += 6;
+        const { ball: ballSpeed, ai: aiSpeed, paddle: paddleSpeed } = speedRef.current;
+
+        if (keysRef.current.up) state.playerY -= paddleSpeed;
+        if (keysRef.current.down) state.playerY += paddleSpeed;
         if (touchYRef.current !== null) {
           state.playerY = touchYRef.current - PADDLE_HEIGHT / 2;
         }
@@ -233,8 +247,8 @@ export default function Pong() {
 
         const aiCenter = state.aiY + PADDLE_HEIGHT / 2;
         const ballCenter = state.ball.y;
-        if (aiCenter < ballCenter - 8) state.aiY += AI_SPEED;
-        else if (aiCenter > ballCenter + 8) state.aiY -= AI_SPEED;
+        if (aiCenter < ballCenter - 8) state.aiY += aiSpeed;
+        else if (aiCenter > ballCenter + 8) state.aiY -= aiSpeed;
         state.aiY = Math.max(0, Math.min(h - PADDLE_HEIGHT, state.aiY));
 
         state.ball.x += state.ball.vx;
@@ -276,7 +290,7 @@ export default function Pong() {
           state.ball.vy += (state.ball.y - (state.aiY + PADDLE_HEIGHT / 2)) * 0.08;
         }
 
-        const maxVy = BALL_SPEED * 2.2;
+        const maxVy = ballSpeed * 2.2;
         state.ball.vy = Math.max(-maxVy, Math.min(maxVy, state.ball.vy));
 
         if (state.ball.x < 0) {
