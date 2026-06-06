@@ -21,7 +21,8 @@ export default function LiquidEther({
   autoIntensity = 2.2,
   takeoverDuration = 0.25,
   autoResumeDelay = 1000,
-  autoRampDuration = 0.6
+  autoRampDuration = 0.6,
+  paused = false
 }) {
   const mountRef = useRef(null);
   const webglRef = useRef(null);
@@ -1162,6 +1163,16 @@ export default function LiquidEther({
     autoResumeDelay,
     autoRampDuration
   ]);
+
+  useEffect(() => {
+    const webgl = webglRef.current;
+    if (!webgl) return;
+    if (paused) {
+      webgl.pause();
+    } else if (isVisibleRef.current && !document.hidden) {
+      webgl.start();
+    }
+  }, [paused]);
 
   return <div ref={mountRef} className={`liquid-ether-container ${className || ''}`} style={style} />;
 }
