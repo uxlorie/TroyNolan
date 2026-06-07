@@ -1,9 +1,49 @@
-import { Redis } from '@upstash/redis';
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { createClient } from 'redis';
+
+function loadLocalEnv() {
+  if (process.env.REDIS_URL) return;
+
+  for (const file of ['.env.local', '.env.development.local', '.env']) {
+    const path = resolve(process.cwd(), file);
+    if (!existsSync(path)) continue;
+
+    for (const line of readFileSync(path, 'utf8').split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eq = trimmed.indexOf('=');
+      if (eq === -1) continue;
+      const key = trimmed.slice(0, eq);
+      const value = trimmed.slice(eq + 1).replace(/^["']|["']$/g, '');
+      if (!(key in process.env)) process.env[key] = value;
+    }
+
+    if (process.env.REDIS_URL) return;
+  }
+}
+
+loadLocalEnv();
 
 const KV_KEY = 'snake:leaderboard';
 const MAX_ENTRIES = 10;
 
-const redis = Redis.fromEnv();
+let redis;
+
+async function getRedis() {
+  const url = process.env.REDIS_URL;
+  if (!url) {
+    throw new Error('REDIS_URL is not configured');
+  }
+
+  if (!redis) {
+    redis = createClient({ url });
+    redis.on('error', (err) => console.error('Redis Client Error', err));
+    await redis.connect();
+  }
+
+  return redis;
+}
 
 function sortEntries(entries) {
   return [...entries].sort((a, b) => {
@@ -24,8 +64,15 @@ function sanitizeEntries(entries) {
 }
 
 async function getEntries() {
-  const raw = await redis.get(KV_KEY);
-  return sortEntries(sanitizeEntries(raw ?? [])).slice(0, MAX_ENTRIES);
+  const client = await getRedis();
+  const raw = await client.get(KV_KEY);
+  const parsed = raw ? JSON.parse(raw) : [];
+  return sortEntries(sanitizeEntries(parsed)).slice(0, MAX_ENTRIES);
+}
+
+async function setEntries(entries) {
+  const client = await getRedis();
+  await client.set(KV_KEY, JSON.stringify(entries));
 }
 
 export default async function handler(req, res) {
@@ -65,7 +112,7 @@ export default async function handler(req, res) {
       });
 
       const trimmed = sortEntries(entries).slice(0, MAX_ENTRIES);
-      await redis.set(KV_KEY, trimmed);
+      await setEntries(trimmed);
       return res.status(200).json({ entries: trimmed, qualified: true });
     }
 

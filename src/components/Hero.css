@@ -24,6 +24,13 @@
   object-fit: cover;
 }
 
+.hero__text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
 .hero__name {
   font-family: 'Press Start 2P', cursive;
   font-size: clamp(0.7rem, 2.5vw, 1.75rem);
@@ -36,6 +43,47 @@
     0 2px 12px var(--text-shadow),
     0 0 48px rgba(14, 116, 144, 0.15);
   margin: 0;
+}
+
+.hero__details {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.hero__detail {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: #cbd5e1;
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.hero__detail-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #4ade80;
+  filter: drop-shadow(0 0 6px rgba(74, 222, 128, 0.45));
+}
+
+.hero__detail-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .hero__scroll {
@@ -101,6 +149,10 @@
     flex-direction: row;
     gap: 3rem;
     text-align: left;
+  }
+
+  .hero__text {
+    align-items: flex-start;
   }
 
   .hero__photo {

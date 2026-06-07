@@ -1,6 +1,7 @@
 const STORAGE_KEY = 'troynolan-snake-leaderboard';
 const MAX_ENTRIES = 10;
 const API_URL = '/api/leaderboard';
+const USE_LOCAL_FALLBACK = import.meta.env.DEV;
 
 export function sortLeaderboard(entries) {
   return [...entries].sort((a, b) => {
@@ -51,7 +52,8 @@ export async function fetchLeaderboard() {
     const data = await res.json();
     return sanitizeEntries(data.entries);
   } catch {
-    return loadLocalLeaderboard();
+    if (USE_LOCAL_FALLBACK) return loadLocalLeaderboard();
+    return [];
   }
 }
 
@@ -71,6 +73,7 @@ export async function saveLeaderboardEntry(initials, score) {
     const data = await res.json();
     return sanitizeEntries(data.entries);
   } catch {
+    if (!USE_LOCAL_FALLBACK) throw new Error('Leaderboard save failed');
     const entries = loadLocalLeaderboard();
     entries.push({
       initials: payload.initials,
