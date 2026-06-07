@@ -1,31 +1,40 @@
 const STORAGE_KEY = 'troynolan-snake-leaderboard';
 const MAX_ENTRIES = 10;
-
-export function loadLeaderboard() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return sortLeaderboard(
-      parsed.filter(
-        (entry) =>
-          entry &&
-          typeof entry.initials === 'string' &&
-          typeof entry.score === 'number' &&
-          entry.score > 0
-      )
-    );
-  } catch {
-    return [];
-  }
-}
+const API_URL = '/api/leaderboard';
 
 export function sortLeaderboard(entries) {
   return [...entries].sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
     return new Date(b.date) - new Date(a.date);
   });
+}
+
+function sanitizeEntries(entries) {
+  if (!Array.isArray(entries)) return [];
+  return sortLeaderboard(
+    entries.filter(
+      (entry) =>
+        entry &&
+        typeof entry.initials === 'string' &&
+        typeof entry.score === 'number' &&
+        entry.score > 0
+    )
+  ).slice(0, MAX_ENTRIES);
+}
+
+function loadLocalLeaderboard() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    return sanitizeEntries(JSON.parse(raw));
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalLeaderboard(entries) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  return entries;
 }
 
 export function qualifiesForLeaderboard(score, entries) {
@@ -35,14 +44,39 @@ export function qualifiesForLeaderboard(score, entries) {
   return score > sorted[sorted.length - 1].score;
 }
 
-export function addLeaderboardEntry(initials, score) {
-  const entries = loadLeaderboard();
-  entries.push({
+export async function fetchLeaderboard() {
+  try {
+    const res = await fetch(API_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Leaderboard fetch failed');
+    const data = await res.json();
+    return sanitizeEntries(data.entries);
+  } catch {
+    return loadLocalLeaderboard();
+  }
+}
+
+export async function saveLeaderboardEntry(initials, score) {
+  const payload = {
     initials: initials.toUpperCase().slice(0, 3),
-    score,
-    date: new Date().toISOString()
-  });
-  const trimmed = sortLeaderboard(entries).slice(0, MAX_ENTRIES);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
-  return trimmed;
+    score
+  };
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Leaderboard save failed');
+    const data = await res.json();
+    return sanitizeEntries(data.entries);
+  } catch {
+    const entries = loadLocalLeaderboard();
+    entries.push({
+      initials: payload.initials,
+      score: payload.score,
+      date: new Date().toISOString()
+    });
+    return saveLocalLeaderboard(sanitizeEntries(entries));
+  }
 }

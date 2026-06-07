@@ -26,6 +26,17 @@ npm run preview
    - **Output directory:** `dist`
 5. Click **Deploy**.
 
+## Global Snake leaderboard (required for shared high scores)
+
+The leaderboard uses a Vercel serverless API (`/api/leaderboard`) with **Upstash Redis** so every visitor sees the same top 10 scores.
+
+1. In your Vercel project, go to **Storage** (or [Vercel Marketplace → Redis](https://vercel.com/marketplace?category=storage&search=redis)).
+2. Add an **Upstash Redis** database and link it to the TroyNolan project.
+3. Vercel automatically sets `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`.
+4. Redeploy the project.
+
+Without Redis connected, the site falls back to per-browser scores during local development only.
+
 ## Connect troynolan.com
 
 1. In the Vercel project, go to **Settings → Domains**.

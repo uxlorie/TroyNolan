@@ -60,7 +60,7 @@
 
 .hero__scroll-label {
   font-family: 'Press Start 2P', cursive;
-  font-size: clamp(0.4rem, 1.2vw, 0.55rem);
+  font-size: clamp(0.55rem, 1.8vw, 0.85rem);
   letter-spacing: 0.05em;
   text-shadow: 0 0 16px rgba(74, 222, 128, 0.4);
 }

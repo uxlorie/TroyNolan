@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useBackgroundPause } from '../context/BackgroundPauseContext';
 import {
-  loadLeaderboard,
+  fetchLeaderboard,
   qualifiesForLeaderboard,
-  addLeaderboardEntry
+  saveLeaderboardEntry
 } from './snakeLeaderboard';
 import './Snake.css';
 
@@ -108,13 +108,23 @@ export default function Snake() {
   const [score, setScore] = useState(0);
   const [message, setMessage] = useState('Eat the dots to grow!');
   const [gameOver, setGameOver] = useState(false);
-  const [leaderboard, setLeaderboard] = useState(() => loadLeaderboard());
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
   const [showInitialsEntry, setShowInitialsEntry] = useState(false);
   const [pendingScore, setPendingScore] = useState(0);
   const [initials, setInitials] = useState('');
 
-  const handleGameEnd = useCallback((finalScore) => {
-    if (qualifiesForLeaderboard(finalScore, loadLeaderboard())) {
+  useEffect(() => {
+    fetchLeaderboard().then((entries) => {
+      setLeaderboard(entries);
+      setLeaderboardLoading(false);
+    });
+  }, []);
+
+  const handleGameEnd = useCallback(async (finalScore) => {
+    const entries = await fetchLeaderboard();
+    setLeaderboard(entries);
+    if (qualifiesForLeaderboard(finalScore, entries)) {
       setPendingScore(finalScore);
       setInitials('');
       setShowInitialsEntry(true);
@@ -148,12 +158,12 @@ export default function Snake() {
     setMessage('Eat the dots to grow!');
   }, []);
 
-  const handleSaveInitials = (e) => {
+  const handleSaveInitials = async (e) => {
     e.preventDefault();
     if (initials.length !== 3) return;
     const savedInitials = initials;
     const savedScore = pendingScore;
-    const updated = addLeaderboardEntry(savedInitials, savedScore);
+    const updated = await saveLeaderboardEntry(savedInitials, savedScore);
     setLeaderboard(updated);
     setShowInitialsEntry(false);
     setPendingScore(0);
@@ -473,7 +483,9 @@ export default function Snake() {
 
       <div className="snake__leaderboard">
         <h3 className="snake__leaderboard-title">Leaderboard</h3>
-        {leaderboard.length === 0 ? (
+        {leaderboardLoading ? (
+          <p className="snake__leaderboard-empty">Loading scores…</p>
+        ) : leaderboard.length === 0 ? (
           <p className="snake__leaderboard-empty">No scores yet — be the first!</p>
         ) : (
           <ol className="snake__leaderboard-list">
