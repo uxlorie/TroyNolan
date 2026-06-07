@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useBackgroundPause } from '../context/BackgroundPauseContext';
+import {
+  loadLeaderboard,
+  qualifiesForLeaderboard,
+  addLeaderboardEntry
+} from './snakeLeaderboard';
 import './Snake.css';
 
 const TICK_MS = { desktop: 320, mobile: 400 };
@@ -98,9 +103,25 @@ export default function Snake() {
   const rafRef = useRef(null);
   const swipeStartRef = useRef(null);
 
+  const handleGameEndRef = useRef(() => {});
+
   const [score, setScore] = useState(0);
   const [message, setMessage] = useState('Eat the dots to grow!');
   const [gameOver, setGameOver] = useState(false);
+  const [leaderboard, setLeaderboard] = useState(() => loadLeaderboard());
+  const [showInitialsEntry, setShowInitialsEntry] = useState(false);
+  const [pendingScore, setPendingScore] = useState(0);
+  const [initials, setInitials] = useState('');
+
+  const handleGameEnd = useCallback((finalScore) => {
+    if (qualifiesForLeaderboard(finalScore, loadLeaderboard())) {
+      setPendingScore(finalScore);
+      setInitials('');
+      setShowInitialsEntry(true);
+    }
+  }, []);
+
+  handleGameEndRef.current = handleGameEnd;
 
   const queueDirection = useCallback((dir) => {
     const state = stateRef.current;
@@ -121,8 +142,24 @@ export default function Snake() {
     lastTickRef.current = 0;
     setScore(0);
     setGameOver(false);
+    setShowInitialsEntry(false);
+    setPendingScore(0);
+    setInitials('');
     setMessage('Eat the dots to grow!');
   }, []);
+
+  const handleSaveInitials = (e) => {
+    e.preventDefault();
+    if (initials.length !== 3) return;
+    const savedInitials = initials;
+    const savedScore = pendingScore;
+    const updated = addLeaderboardEntry(savedInitials, savedScore);
+    setLeaderboard(updated);
+    setShowInitialsEntry(false);
+    setPendingScore(0);
+    setInitials('');
+    setMessage(`Nice! ${savedInitials} scored ${savedScore}`);
+  };
 
   const handleDirectionTap = (dir) => ({
     onPointerDown: (e) => {
@@ -253,6 +290,7 @@ export default function Snake() {
         gameOverRef.current = true;
         setGameOver(true);
         setMessage(`Game over! Score: ${state.score}`);
+        handleGameEndRef.current(state.score);
         return;
       }
 
@@ -266,6 +304,7 @@ export default function Snake() {
           gameOverRef.current = true;
           setGameOver(true);
           setMessage('You win! Board full!');
+          handleGameEndRef.current(state.score);
         }
       } else {
         state.snake.pop();
@@ -398,11 +437,56 @@ export default function Snake() {
         </>
       )}
 
+      {gameOver && showInitialsEntry && (
+        <div className="snake__initials">
+          <p className="snake__initials-label">Top 10! Enter your initials</p>
+          <form className="snake__initials-form" onSubmit={handleSaveInitials}>
+            <input
+              className="snake__initials-input"
+              type="text"
+              value={initials}
+              onChange={(e) =>
+                setInitials(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3))
+              }
+              maxLength={3}
+              placeholder="ABC"
+              aria-label="Three letter initials"
+              autoComplete="off"
+              autoFocus
+            />
+            <button
+              type="submit"
+              className="snake__initials-save"
+              disabled={initials.length !== 3}
+            >
+              Save
+            </button>
+          </form>
+        </div>
+      )}
+
       {gameOver && (
         <button type="button" className="snake__restart" onClick={initState}>
           Play Again
         </button>
       )}
+
+      <div className="snake__leaderboard">
+        <h3 className="snake__leaderboard-title">Leaderboard</h3>
+        {leaderboard.length === 0 ? (
+          <p className="snake__leaderboard-empty">No scores yet — be the first!</p>
+        ) : (
+          <ol className="snake__leaderboard-list">
+            {leaderboard.map((entry, index) => (
+              <li key={`${entry.initials}-${entry.score}-${entry.date}`} className="snake__leaderboard-item">
+                <span className="snake__leaderboard-rank">{index + 1}.</span>
+                <span>{entry.initials}</span>
+                <span>{entry.score}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
     </section>
   );
 }
