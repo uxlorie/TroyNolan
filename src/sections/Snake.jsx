@@ -7,7 +7,7 @@ import {
 } from './snakeLeaderboard';
 import './Snake.css';
 
-const TICK_MS = { desktop: 320, mobile: 400 };
+const TICK_MS = { desktop: 280, mobile: 350 };
 const INITIAL_LENGTH = 3;
 
 const DIRECTIONS = {

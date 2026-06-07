@@ -1,4 +1,5 @@
 .hero {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -35,6 +36,64 @@
     0 2px 12px var(--text-shadow),
     0 0 48px rgba(14, 116, 144, 0.15);
   margin: 0;
+}
+
+.hero__scroll {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: #4ade80;
+  text-decoration: none;
+  opacity: 0.85;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.hero__scroll:hover {
+  opacity: 1;
+  color: #86efac;
+}
+
+.hero__scroll-label {
+  font-family: 'Press Start 2P', cursive;
+  font-size: clamp(0.4rem, 1.2vw, 0.55rem);
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 16px rgba(74, 222, 128, 0.4);
+}
+
+.hero__scroll-arrow {
+  width: 2rem;
+  height: 2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.5));
+  animation: hero-scroll-bounce 1.8s ease-in-out infinite;
+}
+
+@keyframes hero-scroll-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+
+  50% {
+    transform: translateY(10px);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__scroll-arrow {
+    animation: none;
+  }
 }
 
 @media (min-width: 768px) {
